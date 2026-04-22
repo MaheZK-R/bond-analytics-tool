@@ -29,7 +29,7 @@ from src.charts import (
 # ── Page configuration ───────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Bond Analytics Tool",
-    page_icon="📊",
+    page_icon="B",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -62,7 +62,7 @@ st.markdown("""
 
 # ── Sidebar — Bond Parameters ────────────────────────────────────────────────
 with st.sidebar:
-    st.title("📊 Bond Analytics")
+    st.title("Bond Analytics")
     st.caption("Fixed income calculator — CFA L1 concepts")
 
     st.divider()
@@ -119,7 +119,7 @@ with st.sidebar:
     st.divider()
 
     # ── Load FRED rates ──────────────────────────────────────────────────
-    st.subheader("🇺🇸 US Treasury Rates (FRED)")
+    st.subheader("US Treasury Rates (FRED)")
     with st.spinner("Fetching live rates..."):
         treasury_rates = fetch_current_treasury_rates()
 
@@ -156,7 +156,8 @@ else:
 st.title("Bond Analytics Tool")
 st.markdown(
     "*Fixed income calculator: yield, duration, convexity, and price sensitivity — "
-    "built from first principles following CFA L1 curriculum.*"
+    "built from first principles following CFA L1 curriculum.*  \n"
+    "*by [Nieucel Mahe](https://github.com/MaheZK-R)*"
 )
 
 # Quick status banner
@@ -169,11 +170,11 @@ col_d.metric("Status", pricing_label)
 
 # ── Tabs ─────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📐 Key Metrics",
-    "📈 Price vs Yield",
-    "💰 Cash Flows",
-    "🧪 Sensitivity",
-    "🌐 Yield Curve",
+    "Key Metrics",
+    "Price vs Yield",
+    "Cash Flows",
+    "Sensitivity",
+    "Yield Curve",
 ])
 
 
@@ -206,7 +207,7 @@ with tab1:
             insight = f"Trading at **discount** of {abs(diff):,.2f} — coupon ({coupon_rate_pct:.2f}%) < market rate ({market_rate_pct:.2f}%). YTM > coupon."
         else:
             insight = f"Trading **at par** — coupon rate ≈ market rate."
-        st.markdown(f'<div class="insight-box">💡 {insight}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
 
     with col2:
         st.markdown("#### Duration & Convexity")
@@ -228,7 +229,7 @@ with tab1:
         # Duration intuition
         price_change_1pct = -metrics["modified_duration"] * 0.01 * 100
         st.markdown(
-            f'<div class="insight-box">💡 For a +100bps yield increase, '
+            f'<div class="insight-box">For a +100bps yield increase, '
             f'duration approximation suggests a <strong>{price_change_1pct:.2f}%</strong> price change. '
             f'Convexity softens the actual loss.</div>',
             unsafe_allow_html=True,
@@ -291,7 +292,7 @@ with tab2:
 
     st.markdown(f"""
     <div class="insight-box">
-    💡 <strong>Key insight:</strong> The convexity ({metrics['convexity']:.2f}) quantifies how much
+    <strong>Key insight:</strong> The convexity ({metrics['convexity']:.2f}) quantifies how much
     the actual price exceeds the linear (duration-only) estimate.
     Higher convexity → more desirable bond, all else equal. Long-maturity bonds and low-coupon
     bonds have the highest convexity — which is why they outperform in large rate rallies.
@@ -313,7 +314,7 @@ with tab3:
 
     st.markdown(f"""
     <div class="insight-box">
-    💡 Macaulay Duration = <strong>{metrics['macaulay_duration']:.2f} years</strong>.
+    Macaulay Duration = <strong>{metrics['macaulay_duration']:.2f} years</strong>.
     For a zero-coupon bond, duration equals maturity (all cash flow at T=n).
     For a coupon bond, duration < maturity because intermediate coupons pull the weighted
     average forward. This bond's Macaulay Duration is {(metrics['macaulay_duration']/years_to_maturity*100):.1f}%
@@ -409,7 +410,7 @@ with tab5:
     spread = market_rate_pct - rf_rate
     st.markdown(f"""
     <div class="insight-box">
-    💡 Your bond's market rate ({market_rate_pct:.2f}%) vs. closest Treasury ({nearest_label}: {rf_rate:.2f}%) →
+    Your bond's market rate ({market_rate_pct:.2f}%) vs. closest Treasury ({nearest_label}: {rf_rate:.2f}%) →
     <strong>spread of {spread:.2f}%</strong>. This spread represents credit risk, liquidity premium,
     and any other risks relative to the risk-free rate.
     </div>
@@ -419,7 +420,8 @@ with tab5:
 # ── Footer ───────────────────────────────────────────────────────────────────
 st.divider()
 st.caption(
-    "bond-analytics-tool · Built from CFA L1 first principles · "
+    "bond-analytics-tool · Built by Nieucel Mahe · "
+    "From CFA L1 first principles · "
     "Data: FRED (Federal Reserve) · "
-    "No financial advice — educational purpose only"
+    "Educational purpose only"
 )
