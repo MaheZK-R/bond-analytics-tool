@@ -16,6 +16,7 @@ Docs : https://fred.stlouisfed.org/docs/api/fred/
 
 import requests
 import pandas as pd
+import streamlit as st
 from datetime import datetime, timedelta
 
 
@@ -31,6 +32,7 @@ TREASURY_SERIES = {
 FRED_BASE_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 
 
+@st.cache_data(ttl=3600)
 def fetch_current_treasury_rates() -> dict[str, float]:
     """
     Fetch the most recent available US Treasury yields from FRED.
