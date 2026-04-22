@@ -70,10 +70,10 @@ with st.sidebar:
 
     face_value = st.number_input(
         "Face Value (€ / $)",
-        min_value=100.0,
+        min_value=10.0,
         max_value=1_000_000.0,
-        value=1000.0,
-        step=100.0,
+        value=100.0,
+        step=10.0,
         help="Par / nominal value of the bond.",
     )
 
