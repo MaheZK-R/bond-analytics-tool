@@ -2,6 +2,8 @@
 
 > **Fixed income calculator: yield, duration, convexity, and price sensitivity — built from first principles.**
 
+[![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://bond-analytics-tool-ytjriyszfuwcygbosn4ukc.streamlit.app/)
+
 An interactive Streamlit dashboard implementing core fixed income analytics from the CFA Level 1 curriculum. All formulas are coded from scratch (no QuantLib) to demonstrate genuine understanding of the underlying mathematics.
 
 ![Demo](assets/demo.png)
@@ -39,7 +41,7 @@ Data: FRED (Federal Reserve Economic Data) — no API key required
 ## Quick Start
 
 ```bash
-git clone https://github.com/{username}/bond-analytics-tool
+git clone https://github.com/MaheZK-R/bond-analytics-tool
 cd bond-analytics-tool
 pip install -r requirements.txt
 streamlit run app.py

@@ -1,0 +1,6 @@
+name,face_value,coupon_rate,maturity_years,market_yield,type
+OAT 10Y (France),1000,0.03,10,0.032,Government
+US Treasury 30Y,1000,0.045,30,0.046,Government
+IG Corporate 5Y,1000,0.055,5,0.058,Corporate
+Zero-Coupon 10Y,1000,0.0,10,0.034,Zero-Coupon
+High Yield 7Y,1000,0.085,7,0.092,High Yield
