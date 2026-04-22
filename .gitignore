@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# Environment variables — NEVER commit API keys
+.env
+.env.local
+*.env
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Jupyter (no notebooks in this project — kept clean intentionally)
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Data (keep sample_bonds.csv, ignore large/sensitive files)
+data/*.xlsx
+data/*.parquet
+data/raw/
+
+# Generated assets (keep demo.png, ignore temp outputs)
+assets/tmp/
+*.png.tmp
+
+# Logs
+*.log
