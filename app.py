@@ -5,12 +5,12 @@ Entry point. Run with:
     streamlit run app.py
 
 Structure of the UI:
-  - Sidebar    : bond parameters + risk-free rate reference (FRED)
+  - Sidebar    : bond parameters (frequency selector included)
   - Tab 1      : Key metrics dashboard
   - Tab 2      : Price / Yield curve (convexity visualization)
   - Tab 3      : Cash flow profile
   - Tab 4      : Sensitivity & stress test
-  - Tab 5      : Live US Treasury yield curve
+  - Tab 5      : Live US Treasury yield curve (FRED, loaded on demand)
 """
 
 import streamlit as st
@@ -34,7 +34,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Minimal custom CSS for cleaner aesthetics ────────────────────────────────
+# ── Minimal custom CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
     .metric-card {
@@ -101,7 +101,15 @@ with st.sidebar:
         max_value=15.0,
         value=4.5,
         step=0.1,
-        help="Current yield used to discount cash flows.",
+        help="Current annual yield used to discount cash flows.",
+    )
+
+    frequency = st.radio(
+        "Coupon Frequency",
+        options=[2, 1],
+        format_func=lambda x: "Semi-Annual (standard)" if x == 2 else "Annual",
+        horizontal=True,
+        help="Semi-annual is the convention for US Treasuries and most IG corporates.",
     )
 
     st.divider()
@@ -116,18 +124,6 @@ with st.sidebar:
         help="Hypothetical parallel shift in yield for sensitivity analysis.",
     )
 
-    st.divider()
-
-    # ── Load FRED rates ──────────────────────────────────────────────────
-    st.subheader("US Treasury Rates (FRED)")
-    with st.spinner("Fetching live rates..."):
-        treasury_rates = fetch_current_treasury_rates()
-
-    for label, rate in sorted(treasury_rates.items()):
-        st.metric(label=label, value=f"{rate:.2f}%")
-
-    st.caption("Source: Federal Reserve Economic Data (FRED)")
-
 
 # ── Instantiate Bond ─────────────────────────────────────────────────────────
 bond = Bond(
@@ -135,21 +131,18 @@ bond = Bond(
     coupon_rate=coupon_rate_pct / 100,
     years_to_maturity=years_to_maturity,
     market_rate=market_rate_pct / 100,
+    frequency=frequency,
 )
 
 metrics = bond.summary()
 current_price = metrics["price"]
 
-# Determine if bond is at premium / discount / par
-if abs(current_price - face_value) < 1:
+if abs(current_price - face_value) < 0.01 * face_value:
     pricing_label = "At Par"
-    pricing_color = "neutral"
 elif current_price > face_value:
     pricing_label = "At Premium"
-    pricing_color = "positive"
 else:
     pricing_label = "At Discount"
-    pricing_color = "negative"
 
 
 # ── Header ───────────────────────────────────────────────────────────────────
@@ -160,11 +153,10 @@ st.markdown(
     "*by [Nieucel Mahe](https://github.com/MaheZK-R)*"
 )
 
-# Quick status banner
 col_a, col_b, col_c, col_d = st.columns(4)
-col_a.metric("Bond Price", f"{current_price:,.2f}", delta=f"{current_price - face_value:+.2f} vs par")
-col_b.metric("YTM", f"{metrics['ytm_pct']:.3f}%")
-col_c.metric("Coupon", f"{coupon_rate_pct:.2f}%", delta="vs market rate" if abs(coupon_rate_pct - market_rate_pct) > 0.01 else None)
+col_a.metric("Full Price (Dirty)", f"{current_price:,.4f}")
+col_b.metric("Modified Duration", f"{metrics['modified_duration']:.4f}")
+col_c.metric("DV01", f"{metrics['dv01']:.4f}")
 col_d.metric("Status", pricing_label)
 
 
@@ -190,27 +182,26 @@ with tab1:
         st.markdown("#### Pricing")
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Bond Price</div>
+            <div class="metric-label">Full Price (Dirty) — no accrued interest in this model</div>
             <div class="metric-value">{current_price:,.4f}</div>
         </div>
         <div class="metric-card">
-            <div class="metric-label">Yield to Maturity (YTM)</div>
+            <div class="metric-label">Yield to Maturity (= Market Rate by construction)</div>
             <div class="metric-value">{metrics['ytm_pct']:.4f}%</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Premium / discount explanation
         diff = current_price - face_value
-        if diff > 1:
-            insight = f"Trading at **premium** of {diff:,.2f} — coupon ({coupon_rate_pct:.2f}%) > market rate ({market_rate_pct:.2f}%). YTM < coupon."
-        elif diff < -1:
-            insight = f"Trading at **discount** of {abs(diff):,.2f} — coupon ({coupon_rate_pct:.2f}%) < market rate ({market_rate_pct:.2f}%). YTM > coupon."
+        if diff > 0.01 * face_value:
+            insight = f"Trading at <strong>premium</strong> of {diff:,.2f} — coupon ({coupon_rate_pct:.2f}%) > market rate ({market_rate_pct:.2f}%). YTM &lt; coupon."
+        elif diff < -0.01 * face_value:
+            insight = f"Trading at <strong>discount</strong> of {abs(diff):,.2f} — coupon ({coupon_rate_pct:.2f}%) &lt; market rate ({market_rate_pct:.2f}%). YTM &gt; coupon."
         else:
-            insight = f"Trading **at par** — coupon rate ≈ market rate."
+            insight = f"Trading <strong>at par</strong> — coupon rate ≈ market rate."
         st.markdown(f'<div class="insight-box">{insight}</div>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown("#### Duration & Convexity")
+        st.markdown("#### Risk Metrics")
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-label">Macaulay Duration</div>
@@ -224,48 +215,54 @@ with tab1:
             <div class="metric-label">Convexity</div>
             <div class="metric-value">{metrics['convexity']:.4f}</div>
         </div>
+        <div class="metric-card">
+            <div class="metric-label">DV01 — price change per +1bp yield</div>
+            <div class="metric-value">{metrics['dv01']:.4f}</div>
+        </div>
         """, unsafe_allow_html=True)
 
-        # Duration intuition
         price_change_1pct = -metrics["modified_duration"] * 0.01 * 100
         st.markdown(
             f'<div class="insight-box">For a +100bps yield increase, '
-            f'duration approximation suggests a <strong>{price_change_1pct:.2f}%</strong> price change. '
-            f'Convexity softens the actual loss.</div>',
+            f'duration approximation: <strong>{price_change_1pct:.2f}%</strong> price change. '
+            f'DV01 = {metrics["dv01"]:.4f} per bp — convexity softens the actual loss.</div>',
             unsafe_allow_html=True,
         )
 
-    # ── Full metrics table ────────────────────────────────────────────────
     st.divider()
     st.subheader("Complete Metrics Table")
 
     sensitivity = bond.price_change_estimate(shock_bps / 10000)
     sensitivity_neg = bond.price_change_estimate(-shock_bps / 10000)
+    freq_label = "Semi-Annual" if frequency == 2 else "Annual"
 
     table_data = {
         "Metric": [
-            "Face Value", "Coupon Rate", "Years to Maturity", "Market Rate",
-            "Bond Price", "YTM",
-            "Macaulay Duration", "Modified Duration", "Convexity",
+            "Face Value", "Coupon Rate", "Coupon Frequency", "Years to Maturity", "Market Rate",
+            "Full Price (Dirty)", "YTM (= Market Rate)",
+            "Macaulay Duration", "Modified Duration", "Convexity", "DV01",
             f"Est. ΔP for +{shock_bps}bps", f"Est. ΔP for -{shock_bps}bps",
         ],
         "Value": [
             f"{face_value:,.2f}", f"{coupon_rate_pct:.4f}%",
-            f"{years_to_maturity} years", f"{market_rate_pct:.4f}%",
+            freq_label, f"{years_to_maturity} years", f"{market_rate_pct:.4f}%",
             f"{current_price:,.4f}", f"{metrics['ytm_pct']:.4f}%",
             f"{metrics['macaulay_duration']:.4f} y",
             f"{metrics['modified_duration']:.4f}",
             f"{metrics['convexity']:.4f}",
+            f"{metrics['dv01']:.4f}",
             f"{sensitivity['total_effect_pct']:.4f}%",
             f"{sensitivity_neg['total_effect_pct']:.4f}%",
         ],
         "Interpretation": [
             "Par / nominal value", "Annual coupon as % of FV",
-            "Remaining life", "Current market discount rate",
-            "Theoretical fair value", "Discount rate equating price to cash flows",
+            "Payments per year (2 = market standard for Treasuries & IG)",
+            "Remaining life", "Annual discount rate",
+            "Theoretical fair value (no accrued interest)", "Identical to Market Rate — user inputs discount rate directly",
             "Weighted avg. timing of cash flows",
             "Price sensitivity to 1% yield change (approx.)",
             "Curvature of price/yield relationship",
+            "Price change in currency units for +1bp yield",
             "Price change (duration + convexity approx.)",
             "Price change (duration + convexity approx.)",
         ],
@@ -316,7 +313,7 @@ with tab3:
     <div class="insight-box">
     Macaulay Duration = <strong>{metrics['macaulay_duration']:.2f} years</strong>.
     For a zero-coupon bond, duration equals maturity (all cash flow at T=n).
-    For a coupon bond, duration < maturity because intermediate coupons pull the weighted
+    For a coupon bond, duration &lt; maturity because intermediate coupons pull the weighted
     average forward. This bond's Macaulay Duration is {(metrics['macaulay_duration']/years_to_maturity*100):.1f}%
     of its total maturity.
     </div>
@@ -363,7 +360,6 @@ with tab4:
     st.subheader("Sensitivity Waterfall")
     st.pyplot(plot_sensitivity_decomposition(bond, shock_bps), use_container_width=True)
 
-    # ── Scenario table ────────────────────────────────────────────────────
     st.divider()
     st.subheader("Scenario Analysis — Multiple Yield Shocks")
     scenarios = [-300, -200, -100, -50, 0, 50, 100, 200, 300]
@@ -391,7 +387,7 @@ with tab4:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TAB 5 — LIVE YIELD CURVE
+# TAB 5 — LIVE YIELD CURVE (FRED — loaded on demand via session_state)
 # ─────────────────────────────────────────────────────────────────────────────
 with tab5:
     st.subheader("US Treasury Yield Curve — Live (FRED)")
@@ -399,18 +395,51 @@ with tab5:
         "Real-time US Treasury yields fetched from the Federal Reserve Economic Data API (FRED). "
         "An inverted curve (short rates > long rates) has historically preceded recessions."
     )
+
+    col_btn, _ = st.columns([1, 5])
+    with col_btn:
+        refresh = st.button("Refresh FRED data")
+
+    if "treasury_rates" not in st.session_state or refresh:
+        with st.spinner("Fetching live Treasury rates..."):
+            st.session_state["treasury_rates"] = fetch_current_treasury_rates()
+
+    treasury_rates = st.session_state["treasury_rates"]
+
     st.pyplot(plot_yield_curve(treasury_rates), use_container_width=True)
 
-    # Context against current bond
-    nearest_label = min(
-        treasury_rates.keys(),
-        key=lambda x: abs({"1Y": 1, "2Y": 2, "5Y": 5, "10Y": 10, "30Y": 30}.get(x, 99) - years_to_maturity),
-    )
-    rf_rate = treasury_rates.get(nearest_label, 0)
+    # ── Credit spread — linear interpolation between bracketing tenors ────
+    tenor_map = {
+        k: v for k, v in {"1Y": 1, "2Y": 2, "5Y": 5, "10Y": 10, "30Y": 30}.items()
+        if k in treasury_rates
+    }
+    tenors = sorted(tenor_map.items(), key=lambda x: x[1])
+    T = years_to_maturity
+
+    if T <= tenors[0][1]:
+        rf_rate = treasury_rates[tenors[0][0]]
+        interp_note = tenors[0][0]
+    elif T >= tenors[-1][1]:
+        rf_rate = treasury_rates[tenors[-1][0]]
+        interp_note = tenors[-1][0]
+    else:
+        lower = max((t for t in tenors if t[1] <= T), key=lambda x: x[1])
+        upper = min((t for t in tenors if t[1] >= T), key=lambda x: x[1])
+        if lower[1] == upper[1]:
+            rf_rate = treasury_rates[lower[0]]
+            interp_note = lower[0]
+        else:
+            w = (T - lower[1]) / (upper[1] - lower[1])
+            rf_rate = treasury_rates[lower[0]] * (1 - w) + treasury_rates[upper[0]] * w
+            interp_note = (
+                f"interpolated {lower[0]}–{upper[0]} "
+                f"({treasury_rates[lower[0]]:.2f}%–{treasury_rates[upper[0]]:.2f}%)"
+            )
+
     spread = market_rate_pct - rf_rate
     st.markdown(f"""
     <div class="insight-box">
-    Your bond's market rate ({market_rate_pct:.2f}%) vs. closest Treasury ({nearest_label}: {rf_rate:.2f}%) →
+    Your bond's market rate ({market_rate_pct:.2f}%) vs. risk-free rate ({interp_note}: {rf_rate:.2f}%) →
     <strong>spread of {spread:.2f}%</strong>. This spread represents credit risk, liquidity premium,
     and any other risks relative to the risk-free rate.
     </div>
