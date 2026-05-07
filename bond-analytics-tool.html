@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bond Analytics Tool, BNP Paribas Credit Corporate</title>
+<style>
+:root {
+  --green: #00915A;
+  --green-dark: #006F44;
+  --black: #1A1A1A;
+  --white: #FFFFFF;
+  --gray-light: #F5F5F5;
+  --gray-mid: #6B6B6B;
+  --red: #E30613;
+  --orange: #E8892B;
+  --insight-bg: #F0F7F4;
+  --insight-border: #B3D9C8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'BNP Paribas Sans',Arial,sans-serif;background:var(--gray-light);color:var(--black);font-size:14px;line-height:1.5}
+
+/* ── HEADER ── */
+header{border-top:4px solid var(--green);background:var(--white);padding:18px 32px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;align-items:center;gap:14px}
+.logo-mark{width:38px;height:38px;background:var(--green);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+header h1{font-size:20px;font-weight:700;color:var(--black);letter-spacing:-.3px}
+header p{color:var(--gray-mid);font-size:12px;margin-top:2px}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 76px)}
+
+/* ── SIDEBAR ── */
+.sidebar{width:300px;min-width:300px;background:var(--white);border-right:1px solid #E0E0E0;padding:22px 18px;overflow-y:auto}
+.sb-title{font-size:11px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+.sb-section{margin-bottom:26px}
+
+/* ── PARAMS ── */
+.param{margin-bottom:18px}
+.param-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.param-name{font-size:12.5px;color:var(--black);font-weight:500}
+.param-val{font-size:13px;font-weight:700;color:var(--green)}
+input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;height:4px}
+input[type=number]{width:100%;padding:7px 10px;border:1px solid #D0D0D0;border-radius:4px;font-size:13px;outline:none;font-family:inherit}
+input[type=number]:focus{border-color:var(--green)}
+
+/* ── ACCORDION ── */
+.accordion{border:1px solid var(--insight-border);border-radius:6px;overflow:hidden;margin-top:4px}
+.acc-hdr{background:var(--insight-bg);padding:11px 14px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--green-dark);display:flex;justify-content:space-between;align-items:center;user-select:none}
+.acc-body{display:none;padding:16px;background:var(--white)}
+.acc-body.open{display:block}
+.formula{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #F0F0F0}
+.formula:last-child{border:none;margin:0;padding:0}
+.f-name{font-size:11.5px;font-weight:700;color:var(--black);margin-bottom:5px}
+.f-expr{font-family:'Courier New',monospace;font-size:11px;color:var(--green-dark);background:var(--gray-light);padding:7px 10px;border-radius:4px;margin-bottom:4px;white-space:pre-wrap;line-height:1.6}
+.f-expr[contenteditable=true]{cursor:text;outline:none}
+.f-expr[contenteditable=true]:hover{background:#E6F2EC}
+.f-expr[contenteditable=true]:focus{box-shadow:0 0 0 2px var(--green);background:#E6F2EC}
+.f-src{font-size:10px;color:var(--gray-mid);font-style:italic}
+.adv-param{margin-bottom:10px}
+.adv-lbl{font-size:11px;color:var(--gray-mid);margin-bottom:4px}
+select{width:100%;padding:6px 8px;border:1px solid #D0D0D0;border-radius:4px;font-size:12px;outline:none;font-family:inherit;background:var(--white)}
+select:focus{border-color:var(--green)}
+.note-tiny{font-size:10px;color:var(--gray-mid);font-style:italic;margin-top:3px}
+
+/* ── MAIN ── */
+.main{flex:1;padding:24px 32px;overflow-y:auto}
+.section{margin-bottom:40px}
+.section-title{font-size:15px;font-weight:700;color:var(--black);margin-bottom:18px;padding-bottom:8px;border-bottom:2px solid var(--green)}
+
+/* ── HERO PRICE ── */
+.hero{background:var(--white);border:1px solid #E0E0E0;border-radius:8px;padding:22px 26px;margin-bottom:22px;display:flex;align-items:center;gap:24px}
+.hero-left{}
+.hero-label{font-size:10.5px;font-weight:700;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.hero-price{font-size:44px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;line-height:1}
+.hero-note{font-size:11px;color:var(--gray-mid);margin-top:6px}
+.hero-right{flex:1}
+.badge{display:inline-block;padding:4px 13px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-bottom:10px}
+.badge-premium{background:#E8F5EF;color:var(--green)}
+.badge-discount{background:#FEE8E9;color:var(--red)}
+.badge-par{background:#F0F0F0;color:var(--gray-mid)}
+.hero-sub{font-size:12px;color:var(--gray-mid)}
+
+/* ── METRICS GRID ── */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.col-pair{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--white);border:1px solid #E0E0E0;border-left:4px solid var(--green);border-radius:6px;padding:14px 16px}
+.card-lbl{font-size:10.5px;color:var(--gray-mid);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+.card-val{font-size:22px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
+
+/* ── INSIGHT ── */
+.insight{background:var(--insight-bg);border:1px solid var(--insight-border);border-radius:6px;padding:14px 18px;font-size:13px;color:var(--black);line-height:1.65;margin-bottom:10px}
+
+/* ── SCENARIO TABLE ── */
+.tbl-wrap{overflow-x:auto;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--green)}
+thead th{padding:11px 14px;color:var(--white);font-weight:600;font-size:11.5px;letter-spacing:.2px;text-align:right}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:1px solid #EBEBEB}
+tbody tr:nth-child(even){background:var(--gray-light)}
+tbody tr.cur{background:var(--insight-bg)}
+tbody td{padding:9px 14px;text-align:right}
+tbody td:first-child{text-align:left;font-weight:600}
+.pos{color:var(--green);font-weight:700}
+.neg{color:var(--red);font-weight:700}
+.neutral{color:var(--gray-mid);font-weight:600}
+
+/* ── CHART ── */
+.chart-box{background:var(--white);border:1px solid #E0E0E0;border-radius:8px;padding:22px 24px}
+.chart-wrap{position:relative}
+.tooltip{position:absolute;background:var(--black);color:var(--white);padding:5px 10px;border-radius:4px;font-size:11px;pointer-events:none;opacity:0;transition:opacity .12s;white-space:nowrap;z-index:10}
+.spread-caption{font-size:12.5px;color:var(--gray-mid);margin-top:12px;text-align:center}
+.spread-caption strong{color:var(--green-dark)}
+.chart-note{font-size:10.5px;color:var(--gray-mid);font-style:italic;text-align:right;margin-top:8px}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:22px 32px;border-top:1px solid #E0E0E0;background:var(--white);font-size:11.5px;color:var(--gray-mid)}
+footer p+p{font-style:italic;margin-top:4px;font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- ──────────────── HEADER ──────────────── -->
+<header>
+  <div class="logo-mark">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="7" height="7" rx="1" fill="white"/>
+      <rect x="14" y="3" width="7" height="7" rx="1" fill="white" opacity=".7"/>
+      <rect x="3" y="14" width="7" height="7" rx="1" fill="white" opacity=".7"/>
+      <rect x="14" y="14" width="7" height="7" rx="1" fill="white" opacity=".4"/>
+    </svg>
+  </div>
+  <div>
+    <h1>Bond Analytics Tool</h1>
+    <p>Fixed Income Pricing &amp; Risk Analysis &nbsp;&middot;&nbsp; Investment Specialist Corporate Credit &nbsp;&middot;&nbsp; By Mahe Nieucel</p>
+  </div>
+</header>
+
+<!-- ──────────────── LAYOUT ──────────────── -->
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+
+    <div class="sb-section">
+      <div class="sb-title">Bond Parameters</div>
+
+      <div class="param">
+        <div class="param-row">
+          <span class="param-name">Face Value ($)</span>
+          <span class="param-val">100</span>
+        </div>
+      </div>
+
+      <div class="param">
+        <div class="param-row">
+          <span class="param-name">Coupon Rate</span>
+          <span class="param-val" id="dCoupon">5.00%</span>
+        </div>
+        <input type="range" id="coupon" min="0" max="15" step="0.25" value="5">
+      </div>
+
+      <div class="param">
+        <div class="param-row">
+          <span class="param-name">Years to Maturity</span>
+          <span class="param-val" id="dMaturity">10 yrs</span>
+        </div>
+        <input type="range" id="maturity" min="1" max="30" step="1" value="10">
+      </div>
+
+      <div class="param">
+        <div class="param-row">
+          <span class="param-name">Risk-Free Rate</span>
+          <span class="param-val" id="dYield">4.50%</span>
+        </div>
+        <input type="range" id="marketYield" min="0.1" max="15" step="0.1" value="4.5">
+      </div>
+
+      <div class="param">
+        <div class="param-row">
+          <span class="param-name">Credit Spread (bps)</span>
+          <span class="param-val" id="dSpread">150 bps</span>
+        </div>
+        <input type="range" id="creditSpread" min="0" max="500" step="5" value="150">
+      </div>
+
+      <div class="param">
+        <div class="param-row">
+          <span class="param-name">Yield Shock (stress test)</span>
+          <span class="param-val" id="dShock">100 bps</span>
+        </div>
+        <input type="range" id="yieldShock" min="10" max="500" step="10" value="100">
+      </div>
+    </div>
+
+    <!-- Accordion -->
+    <div class="accordion">
+      <div class="acc-hdr" onclick="toggleAcc()">
+        <span id="accLabel">&#9654;&nbsp; Methodology &amp; Formulas</span>
+        <span style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;font-weight:400;color:var(--gray-mid);font-style:italic">click formula to edit</span><span id="accIcon">+</span></span>
+      </div>
+      <div class="acc-body" id="accBody">
+
+        <div class="formula">
+          <div class="f-name">1 &middot; Bond Price</div>
+          <div class="f-expr" contenteditable="true" spellcheck="false" title="Click to edit">P = &Sigma; C/(1+y)^t + FV/(1+y)^n
+
+C   = coupon per period
+y   = all-in yield per period = (r_f + CS/10000) / f
+r_f = risk-free rate (slider)
+CS  = credit spread in bps (slider)
+n   = total periods (= T x f)
+f   = coupon frequency</div>
+          <div class="f-src">CFA Level 1, Fixed Income</div>
+        </div>
+
+        <div class="formula">
+          <div class="f-name">2 &middot; Macaulay Duration</div>
+          <div class="f-expr" contenteditable="true" spellcheck="false" title="Click to edit">D_mac = &Sigma; [(t/f) x PV(CF_t)] / P
+
+PV(CF_t) = CF_t / (1 + y)^t
+t in periods; t/f converts to years</div>
+          <div class="f-src">CFA Level 1, Fixed Income</div>
+        </div>
+
+        <div class="formula">
+          <div class="f-name">3 &middot; Modified Duration</div>
+          <div class="f-expr" contenteditable="true" spellcheck="false" title="Click to edit">D_mod = D_mac / (1 + y/f)
+
+y = all-in yield = r_f + CS/10000
+Interpretation:
+dP/P ~ -D_mod x dy  (1st order)</div>
+          <div class="f-src">CFA Level 1, Fixed Income</div>
+        </div>
+
+        <div class="formula">
+          <div class="f-name">4 &middot; Convexity</div>
+          <div class="f-expr" contenteditable="true" spellcheck="false" title="Click to edit">C = &Sigma; [t(t+1) x PV(CF_t)] / [P x (1+y)^2 x f^2]
+
+Second-order sensitivity of price to yield.
+Higher convexity: benefits from large moves.</div>
+          <div class="f-src">CFA Level 1, Fixed Income</div>
+        </div>
+
+        <div class="formula">
+          <div class="f-name">5 &middot; Price Change Estimate</div>
+          <div class="f-expr" contenteditable="true" spellcheck="false" title="Click to edit">dP/P ~ -D_mod x dy + 1/2 x C x (dy)^2
+
+  Duration effect   : -D_mod x dy
+  Convexity adjust. :  1/2 x C x (dy)^2</div>
+          <div class="f-src">CFA Level 1, Fixed Income</div>
+        </div>
+
+        <div class="formula">
+          <div class="f-name">6 &middot; DV01</div>
+          <div class="f-expr" contenteditable="true" spellcheck="false" title="Click to edit">DV01 = D_mod x P x 0.0001
+
+Dollar value change per 1bp yield move.
+Also known as PVBP (Price Value of a Basis Point).</div>
+          <div class="f-src">CFA Level 1, Fixed Income</div>
+        </div>
+
+        <!-- Advanced -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #E8E8E8">
+          <div class="f-name" style="margin-bottom:12px">Advanced Parameters</div>
+
+          <div class="adv-param">
+            <div class="adv-lbl">Coupon Frequency</div>
+            <select id="frequency" onchange="recalcAll()">
+              <option value="1">Annual (1x/year)</option>
+              <option value="2">Semi-Annual (2x/year)</option>
+            </select>
+          </div>
+
+          <div class="adv-param">
+            <div class="adv-lbl">Day Count Convention</div>
+            <select id="dayCount">
+              <option value="act365">Actual / 365</option>
+              <option value="30360">30 / 360</option>
+              <option value="actact">Actual / Actual</option>
+            </select>
+            <div class="note-tiny">Display only, accrued interest not modelled</div>
+          </div>
+
+          <div class="adv-param">
+            <div class="adv-lbl">Price Display Decimals</div>
+            <select id="decimals" onchange="recalcAll()">
+              <option value="2">2 decimal places</option>
+              <option value="4">4 decimal places</option>
+            </select>
+          </div>
+        </div>
+
+      </div><!-- /acc-body -->
+    </div><!-- /accordion -->
+
+  </aside><!-- /sidebar -->
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <!-- ── SECTION 1: KEY METRICS ── -->
+    <div class="section">
+      <div class="section-title">Key Metrics</div>
+
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-left">
+          <div class="hero-label">Theoretical Price</div>
+          <div class="hero-price" id="heroPrice">$100.00</div>
+          <div class="hero-note">DCF price, accrued interest not modelled</div>
+        </div>
+        <div class="hero-right">
+          <div><span class="badge badge-premium" id="priceBadge">AT PREMIUM</span></div>
+          <div class="hero-sub" id="heroSub">Coupon: 5.00% | All-in Yield: 6.00%</div>
+        </div>
+      </div>
+
+      <!-- 3-column grid: 2 / 2 / 1 -->
+      <div class="metrics">
+        <div class="col-pair">
+          <div class="card"><div class="card-lbl">Macaulay Duration</div><div class="card-val" id="mMacDur">--</div></div>
+          <div class="card"><div class="card-lbl">Modified Duration</div><div class="card-val" id="mModDur">--</div></div>
+        </div>
+        <div class="col-pair">
+          <div class="card"><div class="card-lbl">Convexity</div><div class="card-val" id="mConvex">--</div></div>
+          <div class="card"><div class="card-lbl">DV01 (per bond)</div><div class="card-val" id="mDV01">--</div></div>
+        </div>
+        <div class="col-pair">
+          <div class="card"><div class="card-lbl">Credit Spread</div><div class="card-val" id="mSpread">--</div></div>
+        </div>
+      </div>
+
+      <!-- Insight -->
+      <div class="insight" id="insight">Loading&hellip;</div>
+    </div>
+
+    <!-- ── SECTION 2: SCENARIO ANALYSIS ── -->
+    <div class="section">
+      <div class="section-title">Scenario Analysis: Multiple Yield Shocks</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Yield Shock</th>
+              <th>New Yield (%)</th>
+              <th>Est. Price, Duration+Convexity ($)</th>
+              <th>Actual Price, Full DCF ($)</th>
+              <th>&Delta;Price (%)</th>
+            </tr>
+          </thead>
+          <tbody id="scenBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: YIELD CURVE ── -->
+    <div class="section">
+      <div class="section-title">Indicative Yield Curve, US Treasury Reference</div>
+      <div class="chart-box">
+        <div class="chart-wrap">
+          <div class="tooltip" id="tip"></div>
+          <svg id="curveSvg" width="100%" viewBox="0 0 700 280" xmlns="http://www.w3.org/2000/svg" style="display:block"></svg>
+        </div>
+        <div class="spread-caption" id="spreadCaption"></div>
+        <div class="chart-note">Rates as of April 2025, indicative only. For live data, connect to FRED API or Bloomberg.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ──────────────── FOOTER ──────────────── -->
+<footer>
+  <p>bond-analytics-tool &nbsp;&middot;&nbsp; Built by Nieucel Mahe &nbsp;&middot;&nbsp; Formulas: CFA Level 1, Fixed Income</p>
+</footer>
+
+<script>
+// ───────────────────────────────────────────────────────────────────
+// FINANCIAL ENGINE
+// ───────────────────────────────────────────────────────────────────
+
+function bondPrice(FV, couponRate, yield_, T, f) {
+  const n  = T * f;
+  const yp = yield_ / f;
+  const c  = (couponRate * FV) / f;
+  if (n === 0) return FV;
+  if (couponRate === 0) return FV / Math.pow(1 + yp, n);
+  if (Math.abs(yp) < 1e-12) return c * n + FV;
+  const pvAnnuity = c * (1 - Math.pow(1 + yp, -n)) / yp;
+  const pvFace    = FV / Math.pow(1 + yp, n);
+  return pvAnnuity + pvFace;
+}
+
+function macDuration(FV, couponRate, yield_, T, f) {
+  if (couponRate === 0) return T;
+  const n  = T * f;
+  const yp = yield_ / f;
+  const c  = (couponRate * FV) / f;
+  const P  = bondPrice(FV, couponRate, yield_, T, f);
+  if (P === 0) return 0;
+  let wSum = 0;
+  for (let t = 1; t <= n; t++) {
+    const cf = (t === n) ? c + FV : c;
+    const pv = cf / Math.pow(1 + yp, t);
+    wSum += (t / f) * pv;
+  }
+  return wSum / P;
+}
+
+function modDuration(macDur, yield_, f) {
+  return macDur / (1 + yield_ / f);
+}
+
+function convexity(FV, couponRate, yield_, T, f) {
+  if (couponRate === 0) {
+    const n  = T * f;
+    const yp = yield_ / f;
+    const P  = bondPrice(FV, couponRate, yield_, T, f);
+    return (n * (n + 1) * P) / (P * Math.pow(1 + yp, 2) * f * f);
+  }
+  const n  = T * f;
+  const yp = yield_ / f;
+  const c  = (couponRate * FV) / f;
+  const P  = bondPrice(FV, couponRate, yield_, T, f);
+  if (P === 0) return 0;
+  let sum = 0;
+  for (let t = 1; t <= n; t++) {
+    const cf = (t === n) ? c + FV : c;
+    const pv = cf / Math.pow(1 + yp, t);
+    sum += t * (t + 1) * pv;
+  }
+  return sum / (P * Math.pow(1 + yp, 2) * f * f);
+}
+
+function dv01(modDur, price) {
+  return modDur * price * 0.0001;
+}
+
+function estimatedPrice(price, modDur, conv, deltaY) {
+  return price * (1 - modDur * deltaY + 0.5 * conv * deltaY * deltaY);
+}
+
+// ───────────────────────────────────────────────────────────────────
+// FORMATTING
+// ───────────────────────────────────────────────────────────────────
+
+function fmt$(v, dec) {
+  return '$' + v.toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+function fmtN(v, dec) { return v.toFixed(dec === undefined ? 2 : dec); }
+function $(id) { return document.getElementById(id); }
+
+// ───────────────────────────────────────────────────────────────────
+// ACCORDION
+// ───────────────────────────────────────────────────────────────────
+
+function toggleAcc() {
+  const body = $('accBody');
+  const open = body.classList.toggle('open');
+  $('accIcon').textContent = open ? '-' : '+';
+  $('accLabel').innerHTML  = open
+    ? '&#9660;&nbsp; Methodology &amp; Formulas'
+    : '&#9654;&nbsp; Methodology &amp; Formulas';
+}
+
+// ───────────────────────────────────────────────────────────────────
+// MASTER RECALC
+// ───────────────────────────────────────────────────────────────────
+
+function recalcAll() {
+  const FV       = 100;
+  const cpnR     = parseFloat($('coupon').value) / 100;
+  const T        = parseFloat($('maturity').value);
+  const rfRate   = Math.max(0.001, parseFloat($('marketYield').value) / 100);
+  const spr      = parseFloat($('creditSpread').value);
+  const allInYld = rfRate + spr / 10000;
+  const shock    = parseFloat($('yieldShock').value);
+  const f        = parseInt($('frequency').value);
+  const dec      = parseInt($('decimals').value);
+
+  $('dCoupon').textContent   = (cpnR * 100).toFixed(2) + '%';
+  $('dMaturity').textContent = T + ' yrs';
+  $('dYield').textContent    = (rfRate * 100).toFixed(2) + '%';
+  $('dSpread').textContent   = spr + ' bps';
+  $('dShock').textContent    = shock + ' bps';
+
+  const P    = bondPrice(FV, cpnR, allInYld, T, f);
+  const macD = macDuration(FV, cpnR, allInYld, T, f);
+  const modD = modDuration(macD, allInYld, f);
+  const conv = convexity(FV, cpnR, allInYld, T, f);
+  const dv   = dv01(modD, P);
+
+  $('heroPrice').textContent = fmt$(P, dec);
+
+  const badge = $('priceBadge');
+  if (P > FV * 1.00005) {
+    badge.textContent = 'AT PREMIUM';
+    badge.className   = 'badge badge-premium';
+  } else if (P < FV * 0.99995) {
+    badge.textContent = 'AT DISCOUNT';
+    badge.className   = 'badge badge-discount';
+  } else {
+    badge.textContent = 'AT PAR';
+    badge.className   = 'badge badge-par';
+  }
+
+  $('heroSub').textContent = `Coupon: ${(cpnR*100).toFixed(2)}% | All-in Yield: ${(allInYld*100).toFixed(2)}%`;
+
+  $('mMacDur').textContent = fmtN(macD) + ' yrs';
+  $('mModDur').textContent = fmtN(modD);
+  $('mConvex').textContent = fmtN(conv);
+  $('mDV01').textContent   = fmt$(dv, 2);
+  $('mSpread').textContent = spr.toFixed(0) + ' bps';
+
+  const shockY = shock / 10000;
+  const estP   = estimatedPrice(P, modD, conv, shockY);
+  const estPct = ((estP - P) / P * 100).toFixed(2);
+  const estDiff = fmt$(estP - P, 2);
+
+  let insight = '';
+  if (P > FV * 1.00005) {
+    insight = `Coupon (${(cpnR*100).toFixed(2)}%) exceeds the all-in yield (${(allInYld*100).toFixed(2)}%): the bond trades <strong>above par</strong>.
+      Pull-to-par will erode price toward face value as maturity approaches.
+      <br>For a +${shock}bps yield shock, duration &amp; convexity estimate a <strong>${estPct}%</strong> price move
+      (&asymp; ${estDiff} per bond, DV01 = ${fmt$(dv, 2)}).`;
+  } else if (P < FV * 0.99995) {
+    insight = `All-in yield (${(allInYld*100).toFixed(2)}%) exceeds the coupon (${(cpnR*100).toFixed(2)}%): the bond trades <strong>at a discount</strong>.
+      Pull-to-par will lift price toward face value over time.
+      <br>For a +${shock}bps yield shock, duration &amp; convexity estimate a <strong>${estPct}%</strong> price move
+      (&asymp; ${estDiff} per bond, DV01 = ${fmt$(dv, 2)}).`;
+  } else {
+    insight = `Coupon &asymp; all-in yield (${(allInYld*100).toFixed(2)}%): bond trades <strong>at par</strong>.
+      Modified Duration: <strong>${fmtN(modD)}</strong> &nbsp;&middot;&nbsp;
+      DV01: <strong>${fmt$(dv, 2)}</strong> per basis point &nbsp;&middot;&nbsp;
+      Convexity: <strong>${fmtN(conv)}</strong>.`;
+  }
+  $('insight').innerHTML = insight;
+
+  buildScenario(FV, cpnR, allInYld, T, f, P, modD, conv, dec);
+  buildCurve(T, allInYld, spr);
+}
+
+// ───────────────────────────────────────────────────────────────────
+// SCENARIO TABLE
+// ───────────────────────────────────────────────────────────────────
+
+function buildScenario(FV, cpnR, yld, T, f, P0, modD, conv, dec) {
+  const shocks = [-300, -200, -100, -50, 0, 50, 100, 200, 300];
+  const tbody  = $('scenBody');
+  tbody.innerHTML = '';
+
+  shocks.forEach(bps => {
+    const dy     = bps / 10000;
+    const newYld = Math.max(0.0001, yld + dy);
+    const actP   = bondPrice(FV, cpnR, newYld, T, f);
+    const estP   = estimatedPrice(P0, modD, conv, dy);
+    const dPct   = (actP - P0) / P0 * 100;
+    const isCur  = bps === 0;
+
+    const tr = document.createElement('tr');
+    if (isCur) tr.className = 'cur';
+
+    const label = isCur
+      ? '&plusmn; 0 bps &nbsp;<em style="font-weight:400;color:var(--gray-mid)">(current)</em>'
+      : (bps > 0 ? `+${bps} bps` : `${bps} bps`);
+    const cls  = dPct > 0.005 ? 'pos' : (dPct < -0.005 ? 'neg' : 'neutral');
+    const sign = dPct >= 0 ? '+' : '';
+
+    tr.innerHTML = `
+      <td>${label}</td>
+      <td>${(newYld * 100).toFixed(2)}%</td>
+      <td>${isCur ? '&mdash;' : fmt$(estP, dec)}</td>
+      <td>${fmt$(actP, dec)}</td>
+      <td class="${cls}">${isCur ? '&mdash;' : sign + dPct.toFixed(2) + '%'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ───────────────────────────────────────────────────────────────────
+// YIELD CURVE SVG
+// ───────────────────────────────────────────────────────────────────
+
+const TREAS = [
+  { m: 1,  r: 4.8 },
+  { m: 2,  r: 4.6 },
+  { m: 5,  r: 4.3 },
+  { m: 10, r: 4.2 },
+  { m: 30, r: 4.5 },
+];
+
+function interpRate(mat) {
+  const m = Math.min(Math.max(mat, TREAS[0].m), TREAS[TREAS.length-1].m);
+  for (let i = 0; i < TREAS.length - 1; i++) {
+    if (m >= TREAS[i].m && m <= TREAS[i+1].m) {
+      const t = (m - TREAS[i].m) / (TREAS[i+1].m - TREAS[i].m);
+      return TREAS[i].r + t * (TREAS[i+1].r - TREAS[i].r);
+    }
+  }
+  return TREAS[TREAS.length-1].r;
+}
+
+function ns(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+function buildCurve(bondMat, allInYld, spreadBps) {
+  const svg = $('curveSvg');
+  svg.innerHTML = '';
+
+  const W = 700, H = 280;
+  const pL = 52, pR = 28, pT = 22, pB = 44;
+  const cW = W - pL - pR, cH = H - pT - pB;
+  const MIN_M = 0, MAX_M = 32;
+  const rates  = TREAS.map(d => d.r);
+  const MIN_R  = Math.min(...rates) - 0.6;
+  const MAX_R  = Math.max(...rates) + 0.6;
+
+  const xp = m => pL + (m - MIN_M) / (MAX_M - MIN_M) * cW;
+  const yp = r => pT + (MAX_R - r) / (MAX_R - MIN_R) * cH;
+
+  // Gradient
+  const defs = ns('defs');
+  const grad = ns('linearGradient');
+  grad.setAttribute('id', 'areaGrad'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
+  grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+  const s1 = ns('stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#00915A'); s1.setAttribute('stop-opacity','0.12');
+  const s2 = ns('stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#00915A'); s2.setAttribute('stop-opacity','0.01');
+  grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
+
+  // Grid lines
+  const gridStep  = 0.5;
+  const gridStart = Math.ceil(MIN_R / gridStep) * gridStep;
+  for (let r = gridStart; r <= MAX_R + 0.001; r += gridStep) {
+    r = Math.round(r * 100) / 100;
+    if (r < MIN_R || r > MAX_R) continue;
+    const y = yp(r);
+    const gl = ns('line');
+    gl.setAttribute('x1', pL); gl.setAttribute('x2', W - pR);
+    gl.setAttribute('y1', y);  gl.setAttribute('y2', y);
+    gl.setAttribute('stroke', '#DEDEDE'); gl.setAttribute('stroke-width', '1');
+    gl.setAttribute('stroke-dasharray', '5,5');
+    svg.appendChild(gl);
+    const lbl = ns('text');
+    lbl.setAttribute('x', pL - 6); lbl.setAttribute('y', y + 4);
+    lbl.setAttribute('text-anchor', 'end'); lbl.setAttribute('font-size', '10');
+    lbl.setAttribute('fill', '#6B6B6B'); lbl.setAttribute('font-family', 'Arial,sans-serif');
+    lbl.textContent = r.toFixed(1) + '%';
+    svg.appendChild(lbl);
+  }
+
+  // X-axis ticks
+  [1, 2, 5, 10, 20, 30].forEach(m => {
+    const x = xp(m);
+    const tick = ns('line');
+    tick.setAttribute('x1', x); tick.setAttribute('x2', x);
+    tick.setAttribute('y1', pT + cH); tick.setAttribute('y2', pT + cH + 5);
+    tick.setAttribute('stroke', '#AAAAAA'); tick.setAttribute('stroke-width', '1');
+    svg.appendChild(tick);
+    const lbl = ns('text');
+    lbl.setAttribute('x', x); lbl.setAttribute('y', H - pB + 18);
+    lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('font-size', '10');
+    lbl.setAttribute('fill', '#6B6B6B'); lbl.setAttribute('font-family', 'Arial,sans-serif');
+    lbl.textContent = m + 'Y';
+    svg.appendChild(lbl);
+  });
+
+  // Axes
+  const axX = ns('line');
+  axX.setAttribute('x1', pL); axX.setAttribute('x2', W - pR);
+  axX.setAttribute('y1', pT + cH); axX.setAttribute('y2', pT + cH);
+  axX.setAttribute('stroke', '#AAAAAA'); axX.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axX);
+  const axY = ns('line');
+  axY.setAttribute('x1', pL); axY.setAttribute('x2', pL);
+  axY.setAttribute('y1', pT); axY.setAttribute('y2', pT + cH);
+  axY.setAttribute('stroke', '#AAAAAA'); axY.setAttribute('stroke-width', '1.5');
+  svg.appendChild(axY);
+
+  // Area fill
+  const areaPoints = TREAS.map(d => `${xp(d.m)},${yp(d.r)}`).join(' ');
+  const firstX = xp(TREAS[0].m), lastX = xp(TREAS[TREAS.length-1].m), baseY = pT + cH;
+  const area = ns('polygon');
+  area.setAttribute('points', `${firstX},${baseY} ${areaPoints} ${lastX},${baseY}`);
+  area.setAttribute('fill', 'url(#areaGrad)');
+  svg.appendChild(area);
+
+  // Curve
+  const poly = ns('polyline');
+  poly.setAttribute('points', TREAS.map(d => `${xp(d.m)},${yp(d.r)}`).join(' '));
+  poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#00915A');
+  poly.setAttribute('stroke-width', '2.5'); poly.setAttribute('stroke-linejoin', 'round');
+  poly.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(poly);
+
+  // Treasury dots
+  TREAS.forEach(d => {
+    const dot = ns('circle');
+    dot.setAttribute('cx', xp(d.m)); dot.setAttribute('cy', yp(d.r));
+    dot.setAttribute('r', '5'); dot.setAttribute('fill', '#00915A');
+    dot.setAttribute('stroke', '#FFFFFF'); dot.setAttribute('stroke-width', '2');
+    dot.style.cursor = 'pointer';
+    dot.addEventListener('mouseenter', e => showTip(e, `${d.m}Y Treasury: ${d.r.toFixed(2)}%`));
+    dot.addEventListener('mouseleave', hideTip);
+    svg.appendChild(dot);
+  });
+
+  // Bond marker
+  const bm = Math.min(bondMat, 30);
+  const bx = xp(bm), br = interpRate(bm), by = yp(br);
+  const vl = ns('line');
+  vl.setAttribute('x1', bx); vl.setAttribute('x2', bx);
+  vl.setAttribute('y1', pT); vl.setAttribute('y2', pT + cH);
+  vl.setAttribute('stroke', '#E8892B'); vl.setAttribute('stroke-width', '1.2');
+  vl.setAttribute('stroke-dasharray', '5,4'); vl.setAttribute('opacity', '0.7');
+  svg.appendChild(vl);
+
+  const bdot = ns('circle');
+  bdot.setAttribute('cx', bx); bdot.setAttribute('cy', by);
+  bdot.setAttribute('r', '7'); bdot.setAttribute('fill', '#E8892B');
+  bdot.setAttribute('stroke', '#FFFFFF'); bdot.setAttribute('stroke-width', '2.5');
+  bdot.style.cursor = 'pointer';
+  bdot.addEventListener('mouseenter', e => showTip(e, `Your bond (${bm}Y): Treasury ref ${br.toFixed(2)}%  +${spreadBps}bps spread`));
+  bdot.addEventListener('mouseleave', hideTip);
+  svg.appendChild(bdot);
+
+  // Bond label
+  const lblX = bx + 10 < W - pR - 130 ? bx + 10 : bx - 128;
+  const lblY = by - 10;
+  const lbg = ns('rect');
+  lbg.setAttribute('x', lblX - 4); lbg.setAttribute('y', lblY - 14);
+  lbg.setAttribute('width', '128'); lbg.setAttribute('height', '20');
+  lbg.setAttribute('fill', 'white'); lbg.setAttribute('rx', '3'); lbg.setAttribute('opacity', '0.88');
+  svg.appendChild(lbg);
+  const lbt = ns('text');
+  lbt.setAttribute('x', lblX); lbt.setAttribute('y', lblY);
+  lbt.setAttribute('font-size', '11'); lbt.setAttribute('fill', '#E8892B');
+  lbt.setAttribute('font-weight', '700'); lbt.setAttribute('font-family', 'Arial,sans-serif');
+  lbt.textContent = `Your bond: ${br.toFixed(2)}%`;
+  svg.appendChild(lbt);
+
+  // Axis labels
+  const yTit = ns('text');
+  yTit.setAttribute('x', 12); yTit.setAttribute('y', pT + cH / 2);
+  yTit.setAttribute('text-anchor', 'middle');
+  yTit.setAttribute('transform', `rotate(-90,12,${pT + cH / 2})`);
+  yTit.setAttribute('font-size', '10'); yTit.setAttribute('fill', '#6B6B6B');
+  yTit.setAttribute('font-family', 'Arial,sans-serif');
+  yTit.textContent = 'Yield (%)';
+  svg.appendChild(yTit);
+  const xTit = ns('text');
+  xTit.setAttribute('x', pL + cW / 2); xTit.setAttribute('y', H - 4);
+  xTit.setAttribute('text-anchor', 'middle');
+  xTit.setAttribute('font-size', '10'); xTit.setAttribute('fill', '#6B6B6B');
+  xTit.setAttribute('font-family', 'Arial,sans-serif');
+  xTit.textContent = 'Maturity';
+  svg.appendChild(xTit);
+
+  // Legend
+  const lgX = W - pR - 190, lgY = pT + 8;
+  const lgBg = ns('rect');
+  lgBg.setAttribute('x', lgX - 8); lgBg.setAttribute('y', lgY - 2);
+  lgBg.setAttribute('width', '198'); lgBg.setAttribute('height', '46');
+  lgBg.setAttribute('fill', 'white'); lgBg.setAttribute('rx', '4');
+  lgBg.setAttribute('stroke', '#E0E0E0'); lgBg.setAttribute('stroke-width', '1');
+  svg.appendChild(lgBg);
+  const ll1 = ns('line');
+  ll1.setAttribute('x1', lgX); ll1.setAttribute('x2', lgX + 22);
+  ll1.setAttribute('y1', lgY + 8); ll1.setAttribute('y2', lgY + 8);
+  ll1.setAttribute('stroke', '#00915A'); ll1.setAttribute('stroke-width', '2.5');
+  svg.appendChild(ll1);
+  const ld1 = ns('circle');
+  ld1.setAttribute('cx', lgX + 11); ld1.setAttribute('cy', lgY + 8);
+  ld1.setAttribute('r', '4'); ld1.setAttribute('fill', '#00915A');
+  ld1.setAttribute('stroke', 'white'); ld1.setAttribute('stroke-width', '1.5');
+  svg.appendChild(ld1);
+  const lt1 = ns('text');
+  lt1.setAttribute('x', lgX + 28); lt1.setAttribute('y', lgY + 12);
+  lt1.setAttribute('font-size', '10'); lt1.setAttribute('fill', '#1A1A1A');
+  lt1.setAttribute('font-family', 'Arial,sans-serif');
+  lt1.textContent = 'US Treasury curve';
+  svg.appendChild(lt1);
+  const ld2 = ns('circle');
+  ld2.setAttribute('cx', lgX + 11); ld2.setAttribute('cy', lgY + 30);
+  ld2.setAttribute('r', '5'); ld2.setAttribute('fill', '#E8892B');
+  ld2.setAttribute('stroke', 'white'); ld2.setAttribute('stroke-width', '1.5');
+  svg.appendChild(ld2);
+  const lt2 = ns('text');
+  lt2.setAttribute('x', lgX + 28); lt2.setAttribute('y', lgY + 34);
+  lt2.setAttribute('font-size', '10'); lt2.setAttribute('fill', '#1A1A1A');
+  lt2.setAttribute('font-family', 'Arial,sans-serif');
+  lt2.textContent = `Your bond (${bm}Y maturity)`;
+  svg.appendChild(lt2);
+
+  $('spreadCaption').innerHTML =
+    `Risk-Free (${bm}Y Treasury): <strong>${br.toFixed(2)}%</strong>
+    &nbsp;|&nbsp; Credit Spread: <strong>+${spreadBps} bps</strong>
+    &nbsp;|&nbsp; All-in yield: <strong>${(allInYld*100).toFixed(2)}%</strong>`;
+}
+
+// ───────────────────────────────────────────────────────────────────
+// TOOLTIP
+// ───────────────────────────────────────────────────────────────────
+
+function showTip(e, text) {
+  const tip  = $('tip');
+  const rect = e.target.closest('.chart-wrap').getBoundingClientRect();
+  tip.textContent = text;
+  tip.style.left  = (e.clientX - rect.left + 12) + 'px';
+  tip.style.top   = (e.clientY - rect.top  - 34) + 'px';
+  tip.style.opacity = '1';
+}
+function hideTip() { $('tip').style.opacity = '0'; }
+
+// ───────────────────────────────────────────────────────────────────
+// INIT
+// ───────────────────────────────────────────────────────────────────
+
+['coupon','maturity','marketYield','creditSpread','yieldShock']
+  .forEach(id => $(id).addEventListener('input', recalcAll));
+
+recalcAll();
+</script>
+</body>
+</html>
